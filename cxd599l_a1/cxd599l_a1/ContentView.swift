@@ -6,31 +6,34 @@
 //
 
 import SwiftUI
+import Charts
 
 struct ContentView: View {
     @ObservedObject var viewModel = MotionView()
-    let timer = Timer.publish(every: 1/60.0, on: .main, in: .common).autoconnect()
+    @State var data: [TiltData] = []
+    @State var chartTimer = Timer.publish(every: 1/10.0, on: .main, in: .common).autoconnect()
+    
+    func updateData(_: Date) {
+        data = viewModel.tiltHistory
+    }
     
     var body: some View {
         VStack {
-            Image(systemName: "globe")
-                .imageScale(.large)
-                .foregroundStyle(.tint)
-//            Text("Hello, world!")
-            Text("Tilt").onReceive(timer) { time in
-                
-            }
-            Text(viewModel.accelDisplay)
-            Text(viewModel.gyroDisplay)
-            Text(viewModel.accelSummary)
-            Text(viewModel.gyroSummary)
+//            if (viewModel.showChart) {
             Text(viewModel.tiltSummary)
+            Chart(data) {
+                LineMark(x: .value("Index", $0.index), y: .value("tilt", $0.tilt))
+                    .foregroundStyle(by: .value("Data Source", $0.dataSource))
+            }
+            .onReceive(self.chartTimer, perform: updateData)
+//            }
             Spacer()
                             HStack(spacing: 24){
                                 Button {
-                                    viewModel.stopDisplay()
+                                    viewModel.startDisplay()
+                                    self.chartTimer = Timer.publish(every: 1/10.0, on: .main, in: .common).autoconnect()
                                 } label: {
-                                    Text("Stop Updates")
+                                    Text("Start Updates")
                                         .font(.system(size: 17, weight: .bold))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
@@ -41,9 +44,10 @@ struct ContentView: View {
                                         )
                                 }
                                 Button {
-                                    viewModel.startDisplay()
+                                    viewModel.stopDisplay()
+                                    self.chartTimer.upstream.connect().cancel()
                                 } label: {
-                                    Text("Start Updates")
+                                    Text("Stop Updates")
                                         .font(.system(size: 17, weight: .bold))
                                         .foregroundColor(.white)
                                         .frame(maxWidth: .infinity)
@@ -63,7 +67,7 @@ struct ContentView: View {
                                         .frame(height: 42)
                                         .background(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color.orange)
+                                                .fill(Color.blue)
                                         )
                                 }
                                 Button {
@@ -76,7 +80,7 @@ struct ContentView: View {
                                         .frame(height: 42)
                                         .background(
                                             RoundedRectangle(cornerRadius: 8)
-                                                .fill(Color.orange)
+                                                .fill(Color.red)
                                         )
                                 }
                             }
